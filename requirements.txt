@@ -1,0 +1,7 @@
+flask-restx>=0.4.0
+ibmcloudant>=0.0.33
+ibm-cloud-sdk-core>=3.9.0
+ibm-cos-sdk>=2.10.0
+pandas>=1.2.4
+python-dotenv>=0.17.1
+scikit-learn>=0.24.2
