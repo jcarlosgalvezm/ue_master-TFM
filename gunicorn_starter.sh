@@ -1,3 +1,3 @@
 #!/bin/sh
 
-gunicorn -b 0.0.0.0:8899 -t 12000 wsgi:app
+gunicorn -b :8000 -b :8080 -t 12000 wsgi:app

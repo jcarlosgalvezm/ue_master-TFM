@@ -1,0 +1,4 @@
+applications:
+- name: ds-jobs 
+  random-route: true
+  memory: 256M

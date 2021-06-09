@@ -82,10 +82,10 @@ The webapp will published at *127.0.0.1:5000*
 For production purpose you can launch the webapp typing:
 
 ```{bash}
-$ gunicorn --bind 0.0.0.0:8899 --timeout 12000 wsgi:app
+$ gunicorn --b :8000 -b :8080 --timeout 12000 wsgi:app
 ```
 
-The webapp will published at *0.0.0.0:8899*
+The webapp will published at *0.0.0.0:8000*
 
 ### Using Docker:
 
@@ -98,7 +98,7 @@ $ docker build -t ds_jobs .
 
 Run the docker image:
 ```{bash}
-docker run -it -d -p 8899:8899 ds_jobs
+docker run -it -d -p 8000:8000 ds_jobs
 ```
 
-The webapp will published at *0.0.0.0:8899*
+The webapp will published at *0.0.0.0:8000*
