@@ -13,12 +13,16 @@ def make_namespaces(api):
 
     cloudant_client = cloudant.get_client('MODEL_CATALOG')
     cos_client = cos.get_client()
-    bucket = current_app.config['COS_BUCKET']
+    bucket = current_app.config['COS_MODEL_STORAGE_BUCKET']
+    db = current_app.config['MODEL_CATALOG_DB']
+    predictions_db = current_app.config['MODEL_PREDICTIONS_DB']
 
-    result = cloudant_client.get_document(db='models',
+    model_definition = cloudant_client.get_document(db=db,
         doc_id='ds_jobs', revs=True).get_result()
 
-    for num, rev in enumerate(result['_revisions']['ids'][::-1], start=1):
+    for num, rev in enumerate(
+            model_definition['_revisions']['ids'][::-1], start=1
+            ):
         try:
             fname = f'model_v{num}.pkl'
             ns = Namespace(f'v{num}', description=f'v{num}')
@@ -31,71 +35,31 @@ def make_namespaces(api):
                 '1', '2', '3', '4', '>4', 'never'
                 ], type=str, required=True)
             upload_parser.add_argument('tamano_compania', choices=[
-                '<10',
-                '10/49',
-                '50-99',
-                '100-500',
-                '500-999',
-                '1000-4999',
-                '5000-9999',
-                '10000+'
+                '<10', '10/49', '50-99', '100-500', '500-999', '1000-4999',
+                '5000-9999', '10000+'
                 ], type=str, required=True)
             upload_parser.add_argument('experiencia', choices=[
-                '<1',
-                '1',
-                '2',
-                '3',
-                '4',
-                '5',
-                '6',
-                '7',
-                '8',
-                '10',
-                '11',
-                '12',
-                '13',
-                '14',
-                '15',
-                '16',
-                '17',
-                '18',
-                '19',
-                '20',
-                '>20'
+                '<1', '1', '2', '3', '4', '5', '6', '7', '8', '10', '11', '12',
+                '13', '14', '15', '16', '17', '18', '19', '20', '>20'
                 ], type=str, required=True)
             upload_parser.add_argument('educacion', choices=[
-                'STEM',
-                'Humanities',
-                'Other',
-                'Business Degree',
-                'Arts',
+                'STEM', 'Humanities', 'Other', 'Business Degree', 'Arts',
                 'No Major'
                 ], type=str, required=True)
-            upload_parser.add_argument('universidad_matriculado', choices=[
-                'no_enrollment',
-                'Full time course',
-                'Part time course'
-                ], type=str, required=True)
             upload_parser.add_argument('nivel_educacion', choices=[
-                'Graduate',
-                'Masters',
-                'High School',
-                'Phd',
-                'Primary School'
+                'Graduate', 'Masters', 'High School', 'Phd', 'Primary School'
                 ], type=str, required=True)
             upload_parser.add_argument('experiencia_relevante', choices=[
-                'Has relevent experience',
-                'No relevent experience'
+                'Has relevent experience', 'No relevent experience'
                 ], type=str, required=True)
-
             upload_parser.add_argument('tipo_compania', choices=[
-                'Pvt Ltd',
-                'Funded Startup',
-                'Public Sector',
-                'Early Stage Startup',
-                'NGO',
-                'Other',
+                'Pvt Ltd', 'Funded Startup', 'Public Sector',
+                'Early Stage Startup', 'NGO', 'Other',
                 ], type=str, required=True)
+            upload_parser.add_argument('genero', choices=[
+                'Male', 'Female'
+                ], required=True)
+            upload_parser.add_argument('ciudad', required=True, type=str)
 
             cos_client.get_object(Bucket=bucket, Key=fname)
 
@@ -118,7 +82,7 @@ def make_namespaces(api):
                     score = model.score(X_test, y_test)
                     return {
                         'definition': cloudant_client.get_document(
-                                db='models',
+                                db=db,
                                 doc_id='ds_jobs',
                                 rev=self.REVISION).get_result(),
                         'score': score
@@ -139,9 +103,8 @@ def make_namespaces(api):
                         Key=self.FNAME, Fileobj=model_buf)
                     model_buf.seek(0)
                     model = pickle.load(model_buf)
-                    args['genero'] = np.nan
-                    args['ciudad'] = np.nan
                     X = pd.DataFrame([args])
+                    X['universidad_matriculado'] = np.nan
                     X = X[[
                         'ciudad',
                         'indice_desarrollo_ciudad',
@@ -157,6 +120,13 @@ def make_namespaces(api):
                         'horas_formacion',
                         ]]
                     y_hat = model.predict(X)
+
+                    doc = dict(**args, target=y_hat, model_version=num)
+                    cloudant_client.post_document(
+                        db=predictions_db,
+                        document=doc
+                    )
+
                     return {
                         'result': y_hat[0]
                     }
