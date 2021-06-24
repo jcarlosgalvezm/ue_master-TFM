@@ -41,14 +41,11 @@ ML webservice based on python Flask
     │   │   │                 predictions
     │   │   └── build_model.py
     │   │
-    │   ├── vendor          <- Vendor drivers
-    │   │   │
-    │   │   └── IBM
-    │   │       ├── cloudant.py
-    │   │       └── cos.py
-    │   │
-    │   └── visualization   <- Scripts to create exploratory and results oriented visualizations
-    │       └── visualize.py
+    │   └── vendor          <- Vendor drivers
+    │       │
+    │       └── IBM
+    │           ├── cloudant.py
+    │           └── cos.py
     │
     └── tox.ini             <- tox file with settings for running tox; see tox.readthedocs.io
 
