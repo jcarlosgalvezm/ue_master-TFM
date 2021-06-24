@@ -11,6 +11,7 @@ dotenv.load_dotenv(dotenv_path)
 MODEL_CATALOG_URL = os.getenv('MODEL_CATALOG_URL')
 MODEL_CATALOG_APIKEY = os.getenv('MODEL_CATALOG_APIKEY')
 MODEL_CATALOG_DB = 'model'
+MODEL_PREDICTIONS_DB = 'predictions'
 
 # COS (Cloud Object Storage)
 COS_ENDPOINT = os.getenv('COS_ENDPOINT')

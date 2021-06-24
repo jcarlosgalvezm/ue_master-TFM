@@ -1,18 +1,55 @@
+import pandas as pd
+import numpy as np
+
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
 from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 from sklearn.pipeline import Pipeline, make_pipeline
 
 
-class Sparse2Array(BaseEstimator, TransformerMixin):
+class OutliersTransformer(BaseEstimator, TransformerMixin):
+    def __init__(self, method='drop', factor=1.5, exclude_cols=None):
+        self.method = method
+        self.factor = factor
+        self.exclude_cols = exclude_cols
+
+    def _outlier_removal(self, X, y=None):
+        X = pd.Series(X).copy()
+        if X.name not in self.exclude_cols:
+            q1 = X.quantile(0.25)
+            q3 = X.quantile(0.75)
+            iqr = q3 - q1
+            lower_bound = q1 - (self.factor * iqr)
+            upper_bound = q3 + (self.factor * iqr)
+            X.loc[((X < lower_bound) | (X > upper_bound))] = np.nan
+        return pd.Series(X)
+
+    def _outlier_cap(self, X, y=None):
+        X = pd.Series(X).copy()
+        if X.name not in self.exclude_cols:
+            q1 = X.quantile(0.25)
+            q3 = X.quantile(0.75)
+            iqr = q3 - q1
+            lower_bound = q1 - (self.factor * iqr)
+            upper_bound = q3 + (self.factor * iqr)
+            X.loc[X < lower_bound] = lower_bound
+            X.loc[X > upper_bound] = upper_bound
+        return pd.Series(X)
 
     def fit(self, X, y=None):
+        self.exclude_cols = \
+            set(self.exclude_cols) if self.exclude_cols else set()
         return self
 
     def transform(self, X, y=None):
-        return X.toarray()
+        if self.method == 'drop':
+            return X.apply(self._outlier_removal)
+        elif self.method == 'cap':
+            return X.apply(self._outlier_cap)
+        else:
+            return X
 
     def fit_transform(self, X, y=None):
         return self.fit(X).transform(X)
@@ -20,30 +57,17 @@ class Sparse2Array(BaseEstimator, TransformerMixin):
 
 def get_preprocessing_steps():
 
-    numeric_cols = ['horas_formacion', 'indice_desarrollo_ciudad']
-    categorical_cols = [
-        'ultimo_nuevo_trabajo',
-        'tamano_compania',
-        'experiencia',
-        'educacion',
-        'universidad_matriculado',
-        'nivel_educacion',
-        'experiencia_relevante'
-        ]
-
-    numeric_tf = Pipeline(steps=[
-        ('scaler', StandardScaler())
+    transformer = ColumnTransformer(transformers=[
+        ('num', Pipeline(steps=[
+                ('outliers', OutliersTransformer(method='cap',
+                    exclude_cols=['indice_desarrollo_ciudad'])),
+                ('imputer', SimpleImputer(strategy='median')),
+                ('scaler', MinMaxScaler())
+        ]), ['indice_desarrollo_ciudad', 'horas_formacion']),
+        ('cat', Pipeline(steps=[
+                ('ohe', OneHotEncoder(sparse=False, handle_unknown='ignore'))
+        ]), ['ciudad', 'genero', 'nivel_educacion', 'experiencia',
+            'tamano_compania', 'ultimo_nuevo_trabajo'])
     ])
 
-    categorical_tf = Pipeline(steps=[
-        ('imputer', SimpleImputer(strategy='constant', fill_value='missing')),
-        ('ohe', OneHotEncoder(drop='first'))
-    ])
-
-    transformer = ColumnTransformer(
-        transformers=[
-            ('num', numeric_tf, numeric_cols),
-            ('cat', categorical_tf, categorical_cols),
-        ])
-
-    return make_pipeline(transformer, Sparse2Array(), PCA())
+    return make_pipeline(transformer, PCA(n_components=110))

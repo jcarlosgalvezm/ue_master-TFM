@@ -59,6 +59,9 @@ def make_namespaces(api):
             upload_parser.add_argument('genero', choices=[
                 'Male', 'Female'
                 ], required=True)
+            upload_parser.add_argument('universidad_matriculado', choices=[
+                'no_enrollment', 'Full time course', 'Part time course'
+            ], required=True)
             upload_parser.add_argument('ciudad', required=True, type=str)
 
             cos_client.get_object(Bucket=bucket, Key=fname)
