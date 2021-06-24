@@ -16,7 +16,7 @@ ML webservice based on python Flask
     ├── README.md           <- The top-level README for developers using this project.
     │
     ├── app                 <- REST api tha serves model actions
-    │    │
+    │    
     ├── docs                <- A default Sphinx project; see sphinx-doc.org for details
     │
     ├── notebooks           <- Jupyter notebooks.
