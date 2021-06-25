@@ -8,8 +8,7 @@ dotenv_path = os.path.join(PROJECT_DIR, '.env')
 dotenv.load_dotenv(dotenv_path)
 
 # Cloudant
-MODEL_CATALOG_URL = os.getenv('MODEL_CATALOG_URL')
-MODEL_CATALOG_APIKEY = os.getenv('MODEL_CATALOG_APIKEY')
+MODEL_CATALOG_SERVICE_NAME = 'MODEL_CATALOG_TFM'
 MODEL_CATALOG_DB = 'model'
 MODEL_PREDICTIONS_DB = 'predictions'
 

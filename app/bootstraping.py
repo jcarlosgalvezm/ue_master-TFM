@@ -15,7 +15,9 @@ logger = logging.getLogger('app')
 
 
 def setup_model():
-    cloudant_client = cloudant.get_client('MODEL_CATALOG')
+    cloudant_client = cloudant.get_client(
+        current_app.config['MODEL_CATALOG_SERVICE_NAME']
+        )
     cos_client = cos.get_client()
     bucket = current_app.config['COS_MODEL_STORAGE_BUCKET']
     db = current_app.config['MODEL_CATALOG_DB']
@@ -27,8 +29,6 @@ def setup_model():
 
     cloudant.create_db(cloudant_client, 'model')
     cloudant.create_db(cloudant_client, 'predictions')
-
-
 
     obj_files = []
     try:

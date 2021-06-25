@@ -1,6 +1,7 @@
 import io
 import numpy as np
 import pandas as pd
+import json
 import pickle
 
 from flask import current_app
@@ -11,7 +12,9 @@ from src.data.make_dataset import get_dataset
 
 def make_namespaces(api):
 
-    cloudant_client = cloudant.get_client('MODEL_CATALOG')
+    cloudant_client = cloudant.get_client(
+        current_app.config['MODEL_CATALOG_SERVICE_NAME']
+        )
     cos_client = cos.get_client()
     bucket = current_app.config['COS_MODEL_STORAGE_BUCKET']
     db = current_app.config['MODEL_CATALOG_DB']
@@ -24,13 +27,15 @@ def make_namespaces(api):
             model_definition['_revisions']['ids'][::-1], start=1
             ):
         try:
-            fname = f'model_v{num}.pkl'
+            fname = f'v{num}.pkl'
             ns = Namespace(f'v{num}', description=f'v{num}')
             upload_parser = ns.parser()
+            upload_parser.add_argument('empleado_id', type=int, required=True)
             upload_parser.add_argument('horas_formacion', type=int,
                 required=True)
             upload_parser.add_argument('indice_desarrollo_ciudad', type=float,
-                required=True)
+                required=True,
+                choices=list(np.round(np.arange(0., 1.01, 0.01), 2)))
             upload_parser.add_argument('ultimo_nuevo_trabajo', choices=[
                 '1', '2', '3', '4', '>4', 'never'
                 ], type=str, required=True)
@@ -106,9 +111,10 @@ def make_namespaces(api):
                         Key=self.FNAME, Fileobj=model_buf)
                     model_buf.seek(0)
                     model = pickle.load(model_buf)
+                    args['ciudad'] = args['ciudad'].title()
                     X = pd.DataFrame([args])
-                    X['universidad_matriculado'] = np.nan
-                    X = X[[
+                    X_ordered = X[[
+                        'empleado_id',
                         'ciudad',
                         'indice_desarrollo_ciudad',
                         'genero',
@@ -122,9 +128,11 @@ def make_namespaces(api):
                         'ultimo_nuevo_trabajo',
                         'horas_formacion',
                         ]]
-                    y_hat = model.predict(X)
-
-                    doc = dict(**args, target=y_hat, model_version=num)
+                    X_ordered.set_index('empleado_id', inplace=True)
+                    y_hat = model.predict(X_ordered)
+                    doc = dict(**json.loads(X_ordered.iloc[0].to_json()),
+                        target=y_hat[0], model_version=num,
+                        empleado_id=args['empleado_id'])
                     cloudant_client.post_document(
                         db=predictions_db,
                         document=doc
