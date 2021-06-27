@@ -27,9 +27,6 @@ def setup_model():
     except cos_client.exceptions.BucketAlreadyExists:
         pass
 
-    cloudant.create_db(cloudant_client, 'model')
-    cloudant.create_db(cloudant_client, 'predictions')
-
     obj_files = []
     try:
         # Get latest model definition

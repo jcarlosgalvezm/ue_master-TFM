@@ -1,4 +1,4 @@
 applications:
 - name: ds-jobs 
-  random-route: true
-  memory: 256M
+  route: ds-jobs-chatty-numbat-fo.eu-de.mybluemix.net 
+  memory: 1024M
